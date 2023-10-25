@@ -1,0 +1,72 @@
+﻿@model Library_App.Data.Entity.Books
+@{
+}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details - @Model.Name</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .book-details {
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+            .book-details h2 {
+                font-size: 24px;
+            }
+
+            .book-details p {
+                font-size: 16px;
+                margin: 10px 0;
+            }
+
+        .book-image {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .back-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Book Details</h1>
+    <div class="book-details">
+        <h2>@Model.Name</h2>
+        <p>Author: @Model.Author</p>
+        <p>Description: @Model.Description</p>
+        <img class="book-image" src="@Model.ImageUrl" alt="Book Image">
+        <a href="/Book" class="back-button">Back to Books</a>
+    </div>
+</body>
+</html>

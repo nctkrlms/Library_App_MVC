@@ -1,0 +1,246 @@
+﻿@model Library_App.Data.UserBookViewModel
+@{
+}
+@{
+    var userId = @Model.User?.Id;
+
+    var sortedBooks = @Model.Books?.OrderBy(book => book.Name).ToList();
+}
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Books</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+
+
+    <style>
+        .book-card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .book-card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px;
+            width: calc(30% - 20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .book-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .rent-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .limited-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px; /* Veya farklı bir değer belirleyebilirsiniz */
+        }
+        a{
+			text-decoration: none;
+			color: #fff;
+		}
+
+        button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+    </style>
+
+
+</head>
+<body>
+    <input class="form-control" type="text" id="searchInput" placeholder="Kitap adı veya yazar adıyla arayın...">
+    <button class="btn btn-primary mt-1" id="searchButton">Ara</button>
+
+    @if (Model.User != null)
+    {
+        <p>Welcome, @Model.User.FirstName @Model.User.LastName !</p>
+    }
+    
+
+
+    <h1>Books</h1>
+    
+    <div class="book-card-container">
+        <!-- Book verilerinizi kullanarak bir döngü (foreach) içinde kartları oluşturun -->
+        @foreach (var book in sortedBooks)
+        {
+            <div class="book-card">
+                <img class="book-image" src="@book.ImageUrl" alt="Book Image">
+                <h3>@book.Name</h3>
+                <p class="limited-text">@book.Description</p>
+                @foreach (var user1 in @Model.UserList)
+				{
+                    if (user1.Id == book.AppUserId)
+                    {
+                        <p>Kitabı teslim alan: @user1.FirstName @user1.LastName </p>
+                    }
+					
+				}
+                @if (book.IsBorrowed)
+                {
+                    <p>Kiralama tarihi: @book.BorrowDate.ToString().Substring(0,10)</p>
+				
+                }
+                <p>Author: @book.Author</p>
+                @if(book.IsBorrowed)
+				{
+                    <button class="btn-secondary btn-lg mt-2" disabled>Kira</button>
+                    @if (@book.AppUserId != userId)
+                    {
+                        <button class="btn-secondary btn-lg mt-2" onclick="alertUser()" disabled>Teslim Et</button>
+                    }
+                    else
+                    {
+                        <button class="btn-danger mt-2" onclick="returnBook(@book.Id)">Teslim Et</button>
+                    }
+					
+				}
+				else
+				{
+                    <button class="btn-primary btn-lg" onclick="assignBook(@book.Id)">Kira</button>
+				}
+                
+
+                <button class="rent-button mt-2"><a  href="/Book/Detail/@book.Id">Detay</a></button>
+            </div>
+        }
+    </div>
+    <script>
+        function assignBook(bookId) {
+            // Kullanıcı kimliğini al
+            var userId = '@userId';
+            var selectedDate = prompt("Kaç gün kiralamak istiyorsunuz?");
+
+            if(selectedDate !=null){
+                var parsedDate = parseInt(selectedDate, 10); // Gün sayısını tam sayıya çevir
+                if (!isNaN(parsedDate) && parsedDate > 0) {
+                    var borrowDate = new Date(); // Şu anki tarih
+                    borrowDate.setDate(borrowDate.getDate() + parsedDate);
+                    if (userId) {
+                // AJAX isteği ile kitabı kullanıcıya atayın
+                        $.ajax({
+                            type: "POST",
+                            url: "/Book/AssignBook",
+                            data: { userId: userId, bookId: bookId, borrowDate: borrowDate.toISOString() },
+                            success: function (result) {
+                                updateIsBorrowed(bookId);
+                                // Başarılı bir sonuç aldığınızda burada işlem yapabilirsiniz
+                                alert("Kitap kiralama başarılı!");
+                                location.reload();
+
+                            },
+                            error: function (error) {
+                        // Hata durumunda burada işlem yapabilirsiniz
+                        alert("Kitap kiralama sırasında bir hata oluştu.");
+                            }
+                        });
+                    } else {
+                        // Kullanıcı kimliği bulunamadıysa, giriş yapmamış demektir
+                        alert("Oturum açmış bir kullanıcı gerekli.");
+                        // Giriş yapma sayfasına yönlendirebilirsiniz:
+                        // window.location.href = "/Identity/Account/Login";
+                    } // Kira bitiş tarihini hesapla
+
+                } else {
+                    alert("Geçerli bir gün sayısı girin.");
+                }
+
+            
+            }
+            
+
+            
+        }
+        function updateIsBorrowed(bookId) {
+            // AJAX isteği ile IsBorrowed'i güncelleyin
+            $.ajax({
+                type: "POST",
+                url: "/Book/UpdateIsBorrowed",
+                data: { bookId: bookId },
+                success: function (result) {
+                    // Başarılı bir sonuç aldığınızda burada işlem yapabilirsiniz
+                },
+                error: function (error) {
+                    // Hata durumunda burada işlem yapabilirsiniz
+                }
+            });
+        }
+        function returnBook(bookId) {
+            
+            var userId = '@userId';
+                    // Kullanıcı giriş yapmış mı kontrol et
+            if (userId) {
+                
+
+                // AJAX isteği ile kitabı teslim et
+                $.ajax({
+                    type: "POST",
+                    url: "/Book/ReturnBook",
+                    data: { bookId: bookId },
+                    success: function (result) {
+                        // Başarılı bir sonuç aldığınızda burada işlem yapabilirsiniz
+                        alert("Kitap teslim edildi!");
+                        // Sayfayı yeniden yükle
+                        location.reload();
+                    },
+                    error: function (error) {
+                        // Hata durumunda burada işlem yapabilirsiniz
+                        alert("Kitap teslim sırasında bir hata oluştu.");
+                    }
+                });
+            }
+            else{
+                alert("Oturum açmış bir kullanıcı gerekli.");
+            }
+        }
+        function alertUser() {
+			alert("Bu kitap size ait değil!");
+		}
+        
+    </script>
+    <script>
+        document.getElementById("searchButton").addEventListener("click", function () {
+            var searchText = document.getElementById("searchInput").value.toLowerCase();
+            var bookCards = document.querySelectorAll(".book-card");
+
+            for (var i = 0; i < bookCards.length; i++) {
+                var bookName = bookCards[i].querySelector("h3").textContent.toLowerCase();
+                var bookAuthor = bookCards[i].querySelector("p").textContent.toLowerCase();
+                var displayStyle = bookName.includes(searchText) || bookAuthor.includes(searchText) ? "block" : "none";
+                bookCards[i].style.display = displayStyle;
+            }
+        });
+    </script>
+
+</body>
+</html>
+
